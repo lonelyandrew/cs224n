@@ -28,14 +28,12 @@ def softmax(x):
     """
     orig_shape = x.shape
 
-    # print('x:{}'.format(x))
     if len(x.shape) > 1:
         # Matrix
         max_x = np.max(x, axis=1)[:, np.newaxis]
         x -= max_x
         exp_x = np.exp(x)
-        exp_sum = np.sum(exp_x, axis=-1)
-        exp_sum = exp_sum[: np.newaxis]
+        exp_sum = np.sum(exp_x, axis=-1)[:, np.newaxis]
         x = exp_x / exp_sum
     else:
         # Vector
