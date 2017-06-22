@@ -2,10 +2,23 @@
 
 import numpy as np
 import random
+import logging
 
 from q1_softmax import softmax
 from q2_gradcheck import gradcheck_naive
 from q2_sigmoid import sigmoid, sigmoid_grad
+
+def config_logger():
+    logging.basicConfig(filename='q.log',
+                        level=logging.INFO,
+                        format='%(asctime)s-%(levelname)s-%(message)s',
+                        filemode='w')
+    formatter = logging.Formatter(
+        '%(asctime)s-%(levelname)s-%(message)s')
+    console = logging.StreamHandler()
+    console.setLevel(logging.DEBUG)
+    console.setFormatter(formatter)
+    logging.getLogger('').addHandler(console)
 
 def normalizeRows(x):
     """ Row normalization function
@@ -15,7 +28,8 @@ def normalizeRows(x):
     """
 
     ### YOUR CODE HERE
-    raise NotImplementedError
+    norm = np.linalg.norm(x, axis=-1)
+    x /= norm[:, np.newaxis]
     ### END YOUR CODE
 
     return x
@@ -58,7 +72,14 @@ def softmaxCostAndGradient(predicted, target, outputVectors, dataset):
     """
 
     ### YOUR CODE HERE
-    raise NotImplementedError
+    y_hat = predicted.dot(outputVectors.T)
+    y_hat = softmax(y_hat)
+    cost = -np.log(y_hat[target])
+    yh_minus_y = np.copy(y_hat)
+    yh_minus_y[target] -= 1
+    gradPred = yh_minus_y[np.newaxis, :].dot(outputVectors)
+    gradPred = gradPred.squeeze()
+    grad = np.multiply.outer(yh_minus_y, predicted)
     ### END YOUR CODE
 
     return cost, gradPred, grad
@@ -96,9 +117,28 @@ def negSamplingCostAndGradient(predicted, target, outputVectors, dataset,
     indices.extend(getNegativeSamples(target, dataset, K))
 
     ### YOUR CODE HERE
-    raise NotImplementedError
-    ### END YOUR CODE
 
+    U = outputVectors[indices]
+    weights = np.array([1] + [-1] * K)
+    z = U.dot(predicted)
+    z *= weights
+    a = sigmoid(z)
+    log_a = np.log(a)
+    cost = -np.sum(log_a)
+
+    a_minus_one = (a - 1)[:, np.newaxis]
+    g = U * a_minus_one
+    g *= weights[:, np.newaxis]
+    gradPred = np.sum(g, axis=0)
+
+    gradU = np.tile(predicted, (K+1, 1))
+    gradU *= a_minus_one
+    gradU *= weights[:, np.newaxis]
+
+    grad = np.zeros(outputVectors.shape)
+    np.add.at(grad, indices, gradU)
+
+    ### END YOUR CODE
     return cost, gradPred, grad
 
 
@@ -131,9 +171,15 @@ def skipgram(currentWord, C, contextWords, tokens, inputVectors, outputVectors,
     gradOut = np.zeros(outputVectors.shape)
 
     ### YOUR CODE HERE
-    raise NotImplementedError
+    for context in contextWords:
+        predicted = inputVectors[tokens[currentWord]]
+        target = tokens[context]
+        cost_word, gradPred, grad = word2vecCostAndGradient(predicted, target,
+                outputVectors, dataset)
+        cost += cost_word
+        gradIn[tokens[currentWord]] += gradPred
+        gradOut += grad
     ### END YOUR CODE
-
     return cost, gradIn, gradOut
 
 
@@ -155,7 +201,12 @@ def cbow(currentWord, C, contextWords, tokens, inputVectors, outputVectors,
     gradOut = np.zeros(outputVectors.shape)
 
     ### YOUR CODE HERE
-    raise NotImplementedError
+    surrounding_indices = [tokens[word] for word in contextWords]
+    surrounding = inputVectors[surrounding_indices]
+    predicted = np.sum(surrounding, axis=0)
+    target = tokens[currentWord]
+    cost, gradPred, gradOut = word2vecCostAndGradient(predicted, target, outputVectors, dataset)
+    np.add.at(gradIn, surrounding_indices, gradPred)
     ### END YOUR CODE
 
     return cost, gradIn, gradOut
@@ -188,7 +239,6 @@ def word2vec_sgd_wrapper(word2vecModel, tokens, wordVectors, dataset, C,
         cost += c / batchsize / denom
         grad[:N/2, :] += gin / batchsize / denom
         grad[N/2:, :] += gout / batchsize / denom
-
     return cost, grad
 
 
@@ -223,7 +273,7 @@ def test_word2vec():
     gradcheck_naive(lambda vec: word2vec_sgd_wrapper(
         cbow, dummy_tokens, vec, dataset, 5, negSamplingCostAndGradient),
         dummy_vectors)
-
+    
     print "\n=== Results ==="
     print skipgram("c", 3, ["a", "b", "e", "d", "b", "c"],
         dummy_tokens, dummy_vectors[:5,:], dummy_vectors[5:,:], dataset)
@@ -238,5 +288,6 @@ def test_word2vec():
 
 
 if __name__ == "__main__":
-    test_normalize_rows()
+    config_logger()
+    # test_normalize_rows()
     test_word2vec()

@@ -24,6 +24,7 @@ def gradcheck_naive(f, x):
 
     while not it.finished:
         ix = it.multi_index
+        # print(ix)
 
         x[ix] += h
         random.setstate(rndstate)
