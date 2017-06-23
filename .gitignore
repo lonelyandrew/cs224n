@@ -101,3 +101,4 @@ ENV/
 .mypy_cache/
 
 /assignment1/utils/datasets/*
+*.npy
