@@ -67,7 +67,7 @@ def getRegularizationValues():
     """
     values = None   # Assign a list of floats in the block below
     ### YOUR CODE HERE
-    raise NotImplementedError
+    values = np.linspace(0.0, 100.0, 101)
     ### END YOUR CODE
     return sorted(values)
 
@@ -91,9 +91,11 @@ def chooseBestModel(results):
     bestResult = None
 
     ### YOUR CODE HERE
-    raise NotImplementedError
+    for result in results:
+        if (bestResult is None) or (bestResult['dev'] < result['dev']):
+            bestResult = result
     ### END YOUR CODE
-
+    print(bestResult)
     return bestResult
 
 
