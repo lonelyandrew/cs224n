@@ -102,3 +102,4 @@ ENV/
 
 /assignment1/utils/datasets/*
 *.npy
+/assignment2/data/*
