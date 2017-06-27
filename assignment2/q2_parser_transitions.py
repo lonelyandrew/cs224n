@@ -21,6 +21,9 @@ class PartialParse(object):
         self.sentence = sentence
 
         ### YOUR CODE HERE
+        self.stack = ['ROOT']
+        self.buffer = sentence[:]
+        self.dependencies = []
         ### END YOUR CODE
 
     def parse_step(self, transition):
@@ -31,6 +34,18 @@ class PartialParse(object):
                         and right-arc transitions.
         """
         ### YOUR CODE HERE
+        if transition == 'S':
+            self.stack.append(self.buffer.pop(0))
+        elif transition == 'LA':
+            dependency = tuple(self.stack[-1:-3:-1])
+            self.stack.pop(-2)
+            self.dependencies.append(dependency)
+        elif transition == 'RA':
+            dependency = tuple(self.stack[-2:])
+            self.stack.pop(-1)
+            self.dependencies.append(dependency)
+        else:
+            raise ValueError
         ### END YOUR CODE
 
     def parse(self, transitions):
@@ -65,6 +80,19 @@ def minibatch_parse(sentences, model, batch_size):
     """
 
     ### YOUR CODE HERE
+    partial_parses = [PartialParse(sentence) for sentence in sentences]
+    unfinished_parses = partial_parses[:]
+    
+    while unfinished_parses:
+        minibatch = unfinished_parses[:batch_size]
+        transitions = model.predict(minibatch)
+
+        for pp, transition in zip(minibatch, transitions):
+            pp.parse_step(transition)
+            if len(pp.stack) == 1 and not pp.buffer:
+                unfinished_parses.remove(pp)
+
+    dependencies = [partial_parse.dependencies for partial_parse in partial_parses]
     ### END YOUR CODE
 
     return dependencies
